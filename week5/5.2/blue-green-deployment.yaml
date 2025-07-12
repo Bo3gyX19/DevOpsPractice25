@@ -9,7 +9,7 @@ metadata:
     environment: blue
     version: v1.0.0
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: webapp
@@ -62,7 +62,7 @@ metadata:
     environment: green
     version: v2.0.0
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: webapp
