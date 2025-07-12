@@ -1,0 +1,143 @@
+---
+# Blue Environment (v1 - currently active)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-blue
+  labels:
+    app: webapp
+    environment: blue
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webapp
+      environment: blue
+  template:
+    metadata:
+      labels:
+        app: webapp
+        environment: blue
+        version: v1.0.0
+    spec:
+      containers:
+      - name: webapp
+        image: airodua/webapp:1.0.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: VERSION
+          value: "1.0.0"
+        - name: ENVIRONMENT
+          value: "blue"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+
+---
+# Green Environment (v2 - staging for switch)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-green
+  labels:
+    app: webapp
+    environment: green
+    version: v2.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webapp
+      environment: green
+  template:
+    metadata:
+      labels:
+        app: webapp
+        environment: green
+        version: v2.0.0
+    spec:
+      containers:
+      - name: webapp
+        image: airodua/webapp:2.0.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: VERSION
+          value: "2.0.0"
+        - name: ENVIRONMENT
+          value: "green"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+
+---
+# Production Service (initially points to blue)
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service-production
+  labels:
+    app: webapp
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: webapp
+    environment: blue  # Initially routes to blue (v1)
+
+---
+# Internal Service for Green Environment (for testing)
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service-green-internal
+  labels:
+    app: webapp
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: webapp
+    environment: green

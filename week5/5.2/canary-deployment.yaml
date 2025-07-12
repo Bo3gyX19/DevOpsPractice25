@@ -1,0 +1,115 @@
+---
+# Deployment v1 (75% replicas)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment-v1-canary
+  labels:
+    app: webapp
+    version: v1.0.0
+spec:
+  replicas: 3  # 75% of total traffic
+  selector:
+    matchLabels:
+      app: webapp
+      version: v1.0.0
+  template:
+    metadata:
+      labels:
+        app: webapp
+        version: v1.0.0
+    spec:
+      containers:
+      - name: webapp
+        image: airodua/webapp:1.0.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: VERSION
+          value: "1.0.0"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+
+---
+# Deployment v2 (25% replicas)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment-v2-canary
+  labels:
+    app: webapp
+    version: v2.0.0
+spec:
+  replicas: 1  # 25% of total traffic
+  selector:
+    matchLabels:
+      app: webapp
+      version: v2.0.0
+  template:
+    metadata:
+      labels:
+        app: webapp
+        version: v2.0.0
+    spec:
+      containers:
+      - name: webapp
+        image: airodua/webapp:2.0.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: VERSION
+          value: "2.0.0"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+
+---
+# Shared Service for Canary (routes to both versions)
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service-canary
+  labels:
+    app: webapp
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: webapp  # Routes to both v1 and v2 pods
